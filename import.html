@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Импорт прогресса</title>
+  <meta name="theme-color" content="#0b0f14"/>
+  <style>
+    body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; padding:24px; background:#0b0f14; color:#eaf0f6}
+    .card{max-width:720px; margin:0 auto; background:#111822; border:1px solid #233143; border-radius:16px; padding:20px}
+    .muted{color:#9bb0c3}
+    code{background:#0f1722; border:1px solid #2b3b52; padding:2px 6px; border-radius:6px}
+    a{color:#6ae3ff}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Импорт прогресса…</h1>
+    <p id="msg" class="muted">Идёт обработка ссылки.</p>
+  </div>
+<script>
+(function(){
+  function b64ToUtf8(b64) {
+    try { return decodeURIComponent(escape(atob(b64))); } catch(e) { return atob(b64); }
+  }
+  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : '';
+  if (!hash) { document.getElementById('msg').textContent = 'Нет данных для импорта.'; return; }
+  try {
+    const jsonStr = b64ToUtf8(hash);
+    const data = JSON.parse(jsonStr);
+    if (data.bank) localStorage.setItem('quiz_bank', JSON.stringify(data.bank));
+    if (data.progress) localStorage.setItem('quiz_progress', JSON.stringify(data.progress));
+    document.getElementById('msg').innerHTML = 'Импорт завершён. <br><a href="./">Открыть тест</a>';
+    // Автопереход через 1.2s
+    setTimeout(()=>location.href = './', 1200);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('msg').textContent = 'Ошибка импорта. Некорректные данные.';
+  }
+})();
+</script>
+</body>
+</html>
