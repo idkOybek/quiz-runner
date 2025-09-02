@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Импорт прогресса</title>
+  <meta name="theme-color" content="#0b0f14"/>
+  <style>
+    body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; padding:24px; background:#0b0f14; color:#eaf0f6}
+    .card{max-width:720px; margin:0 auto; background:#111822; border:1px solid #233143; border-radius:16px; padding:20px}
+    .muted{color:#9bb0c3}
+    a{color:#6ae3ff}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Импорт прогресса…</h1>
+    <p id="msg" class="muted">Идёт обработка ссылки.</p>
+  </div>
+<script>
+/*! LZ-String (MIT) https://pieroxy.net/blog/pages/lz-string/index.html */
+var LZString=function(){function o(o,r){if(!t[o]){t[o]={};for(var n=0;n<o.length;n++)t[o][o.charAt(n)]=n}return t[o][r]}var r=String.fromCharCode,n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={},t={},i={compressToEncodedURIComponent:function(o){return null==o?"":i._compress(o,6,function(o){return n.charAt(o)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(e){return o(n,r.charAt(e))})},_compress:function(o,n,e){if(null==o)return"";var t,i,a,s={},p={},u="",c="",l="",h=2,f=3,d=2,m=[],v=0;for(a=0;a<o.length;a+=1)if(u=o.charAt(a),Object.prototype.hasOwnProperty.call(s,u)||(s[u]=f++,p[u]=!0),c=l+u,Object.prototype.hasOwnProperty.call(s,c))l=c;else{if(Object.prototype.hasOwnProperty.call(p,l)){if(l.charCodeAt(0)<256){for(t=0;t<d;t++)v<<=1,0==v&&(v=1,m.push(0));for(i=l.charCodeAt(0),t=0;t<8;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}else{for(i=1,t=0;t<d;t++)v=v<<1|i,0==v&&(v=1,m.push(v>>1&1)),i=0;for(i=l.charCodeAt(0),t=0;t<16;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}h--,0==h&&(h=Math.pow(2,d),d++),delete p[l]}else for(i=s[l],t=0;t<d;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1;h--,0==h&&(h=Math.pow(2,d),d++),s[c]=f++,l=String(u)}if(""!==l){if(Object.prototype.hasOwnProperty.call(p,l)){if(l.charCodeAt(0)<256){for(t=0;t<d;t++)v<<=1,0==v&&(v=1,m.push(0));for(i=l.charCodeAt(0),t=0;t<8;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}else{for(i=1,t=0;t<d;t++)v=v<<1|i,0==v&&(v=1,m.push(v>>1&1)),i=0;for(i=l.charCodeAt(0),t=0;t<16;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}h--,0==h&&(h=Math.pow(2,d),d++),delete p[l]}else for(i=s[l],t=0;t<d;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1;h--,0==h&&(h=Math.pow(2,d),d++),s[c]=f++}for(i=2,t=0;t<d;t++)v=v<<1|i,0==v&&(v=1,m.push(v>>1&1)),i=0;for(;v;)m.push(v&1),v>>=1;for(var g="",w=0;w<m.length;w++)g+=n.charAt(m[w]);return g},_decompress:function(o,r,n){var e,t,i,a,s,p,u,c,l,h=[],f=4,d=4,m=3,v="",g=[],w={val:n(0),position:r,index:1};for(t=0;t<3;t+=1)h[t]=t;for(i=0,a=Math.pow(2,2),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;switch(e=i){case 0:for(i=0,a=Math.pow(2,8),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;c=r(i);break;case 1:for(i=0,a=Math.pow(2,16),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;c=r(i);break;case 2:return""}for(h[3]=c,p=c,l=v=g.push(c);;){if(w.index>o)return"";for(i=0,a=Math.pow(2,m),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;switch(c=i){case 0:for(i=0,a=Math.pow(2,8),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;h[d++]=r(i),c=d-1,m--;break;case 1:for(i=0,a=Math.pow(2,16),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;h[d++]=r(i),c=d-1,m--;break;case 2:return g.join("")}if(0==m&&(m=Math.pow(2,++v)),h[c])t=h[c];else{if(c!==d)return null;t=p+p.charAt(0)}g.push(t),h[d++]=p+t.charAt(0),p=t,0==--m&&(m=Math.pow(2,++v))}}}();</script>
+<script>
+(function(){
+  const params = new URLSearchParams(location.hash.slice(1));
+  const v = params.get('v');
+  const d = params.get('d');
+  if (!d) { document.getElementById('msg').textContent = 'Нет данных для импорта.'; return; }
+  try {
+    let jsonStr = '';
+    if (v === '2') {
+      jsonStr = LZString.decompressFromEncodedURIComponent(d) || '';
+    } else {
+      // legacy: raw base64 JSON
+      jsonStr = decodeURIComponent(escape(atob(d)));
+    }
+    const payload = JSON.parse(jsonStr);
+    if (payload.bank) localStorage.setItem('quiz_bank', JSON.stringify(payload.bank));
+    if (payload.progress) localStorage.setItem('quiz_progress', JSON.stringify(payload.progress));
+    document.getElementById('msg').innerHTML = 'Импорт завершён. <br><a href="./">Открыть тест</a>';
+    setTimeout(()=>location.href = './', 800);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('msg').textContent = 'Ошибка импорта. Некорректные данные.';
+  }
+})();
+</script>
+</body>
+</html>

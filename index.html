@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CSV Quiz Runner — Auto Resume</title>
+  <meta name="theme-color" content="#0b0f14"/>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root { --bg:#0b0f14; --card:#111822; --text:#eaf0f6; --muted:#9bb0c3; --accent:#6ae3ff; --good:#37d67a; --bad:#ff6b6b; }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji"; background:var(--bg); color:var(--text)}
+    header{position:sticky; top:0; z-index:10; backdrop-filter:saturate(160%) blur(6px); background:rgba(11,15,20,.7); border-bottom:1px solid #1e293b}
+    header .wrap{max-width:1100px; margin:0 auto; padding:12px 16px; display:flex; gap:12px; align-items:center; justify-content:space-between}
+    .brand{font-weight:800; letter-spacing:.3px; display:flex; gap:8px; align-items:center}
+    .brand img{width:22px; height:22px}
+    .wrap{max-width:1100px; margin:0 auto; padding:18px 16px}
+    .card{background:var(--card); border:1px solid #233143; border-radius:16px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .row{display:flex; gap:16px; flex-wrap:wrap}
+    .col{flex:1 1 320px}
+    button{border:0; background:#0e7aa1; color:white; padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer}
+    button.secondary{background:#1f2a38}
+    button.ghost{background:transparent; border:1px solid #2b3b52; color:var(--text)}
+    button:disabled{opacity:.6; cursor:not-allowed}
+    .muted{color:var(--muted)}
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#132034; border:1px solid #223652; color:#b9d4ec; font-size:12px}
+    .qhead{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px}
+    .qbox{font-size:18px; line-height:1.5}
+    .options{margin-top:10px; display:grid; gap:10px}
+    .opt{padding:12px 14px; border:1px solid #2b3b52; border-radius:12px; background:#0f1722; display:flex; gap:10px; align-items:flex-start}
+    .opt.correct{border-color:#2e9b6b; background:#0f1c17}
+    .opt.wrong{border-color:#a13a3a; background:#1f1414}
+    .opt input{margin-top:4px}
+    .progress{height:8px; background:#152235; border:1px solid #223652; border-radius:999px; overflow:hidden}
+    .bar{height:100%; background:linear-gradient(90deg, var(--accent), #78ffcd)}
+    .result.good{color:var(--good)} .result.bad{color:var(--bad)}
+    details.expl{margin-top:16px; background:#0e1621; border:1px solid #233143; border-radius:12px; padding:12px}
+    .footer{display:flex; gap:10px; justify-content:space-between; margin-top:16px}
+    .grid{display:grid; gap:12px}
+    .hidden{display:none !important}
+    .small{font-size:12px}
+    .topbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    @media (max-width:520px){ .qbox{font-size:16px} .opt{padding:10px} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand"><img src="icon.svg" alt="">CSV Quiz Runner — Auto</div>
+      <div style="display:flex; gap:8px; align-items:center"><button id="gearBtn" class="ghost" type="button" title="Управление данными">⚙️</button><button id="shareBtn" class="ghost" type="button" title="Ссылка для телефона">🔗</button><div id="status" class="pill">Загрузка…</div></div>
+    </div>
+  </header>
+
+  <div class="wrap grid">
+    <div id="mgrCard" class="card hidden">
+      <div class="row">
+        <div class="col">
+          <h3>Управление данными</h3>
+          <p class="small muted">Здесь можно импортировать/экспортировать банк и прогресс. В обычной жизни сюда заходить не нужно.</p>
+          <div class="topbar">
+            <label class="ghost" style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid #2b3b52; border-radius:12px; cursor:pointer">
+              Импорт банка (JSON/CSV)
+              <input id="importInput" type="file" accept=".csv,application/json" style="display:none"/>
+            </label>
+            <button id="exportBankBtn" class="ghost" type="button">Экспорт банка</button>
+            <button id="exportProgressBtn" class="ghost" type="button">Экспорт прогресса</button>
+            <button id="resetAllBtn" class="secondary" type="button">Сбросить данные</button>
+          </div>
+          <p class="small muted">Совет: можно выложить файл <code>quiz_bank.json</code> рядом с этой страницей — банк загрузится автоматически при первом запуске.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="quizCard" class="card hidden">
+      <div class="qhead">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <span id="quizName" class="pill">Тест</span>
+        </div>
+        <div class="topbar">
+          <button id="translateBtn" class="ghost" type="button" title="Перевести вопрос и пояснение">Перевести</button>
+          <button id="hideTranslationBtn" class="ghost hidden" type="button" title="Скрыть перевод">Скрыть перевод</button>
+          <span id="translatorStatus" class="small muted"></span>
+          <div style="min-width:220px">
+            <div class="progress"><div id="bar" class="bar" style="width:0%"></div></div>
+            <div class="small muted"><span id="idx">0</span>/<span id="total">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qbox" id="qbox"></div>
+      <div class="qbox small muted hidden" id="qboxTranslated"></div>
+
+      <form id="form" class="options"></form>
+
+      <details id="explan" class="expl hidden">
+        <summary>Пояснение</summary>
+        <div id="answerHtml"></div>
+        <div class="small muted hidden" id="answerTranslated"></div>
+      </details>
+
+      <div class="footer">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <span id="score" class="pill">Счёт: 0</span>
+        </div>
+        <div style="display:flex; gap:8px">
+          <button id="prevBtn" class="ghost" type="button">Назад</button>
+          <button id="checkBtn" type="button">Проверить</button>
+          <button id="nextBtn" class="secondary" type="button">Далее</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Service worker
+  if ('serviceWorker' in navigator) { window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js')); }
+
+  // Utils
+  const $ = (id)=>document.getElementById(id);
+  const htmlToPlain = (html)=>{ const el=document.createElement('div'); el.innerHTML=html.replace(/<br\s*\/?>/gi,'\n'); return (el.textContent||'').trim(); };
+  const norm = (s)=> (s||'').toLowerCase().replace(/\s+/g,' ').trim();
+  const stripOptions = (html)=>{
+    const div=document.createElement('div'); div.innerHTML=html.replace(/<br\s*\/?>/gi,'\n');
+    let txt=div.innerHTML.replace(/Варианты\s*ответов\s*:\s*[\s\S]*$/i,'');
+    txt=txt.replace(/(^|\n)\s*[A-D][\.\)\-]\s.*(?=\n|$)/gmi,'');
+    const lines=txt.split('\n').filter(l=>!/^\s*[A-D][\.\)\-]\s/.test(l));
+    return lines.join('\n').replace(/\n{3,}/g,'\n\n');
+  };
+  const extractOptions = (qhtml)=>{
+    const tmp=document.createElement('div'); tmp.innerHTML=qhtml.replace(/<br\s*\/?>/gi,'\n');
+    const re=/(^|\n)\s*([A-D])[\.\)\-]\s*(.*?)(?=\n|$)/gmi; const seen=new Set(); const out=[]; let m;
+    while((m=re.exec(tmp.innerHTML))!==null){ const L=m[2].toUpperCase(); if(!seen.has(L)){ seen.add(L); out.push({letter:L, text:m[3].trim()}); } }
+    return out;
+  };
+  const extractCorrect = (ahtml)=>{
+    const m1 = /✅\s*([A-D])/i.exec(ahtml); if (m1) return m1[1].toUpperCase();
+    const m2 = /Правильн(?:ый|ый ответ)\s*[:\-–]?\s*([A-D])/i.exec(ahtml); if (m2) return m2[1].toUpperCase();
+    const m3 = /<strong>\s*([A-D])[\.|\)]/i.exec(ahtml); if (m3) return m3[1].toUpperCase();
+    return null;
+  };
+
+  // State
+  const state = { bank:[], idx:0, score:0, name:'', review:false, mode:'normal' };
+
+  function saveProgress(){
+    localStorage.setItem('quiz_progress', JSON.stringify({
+      idx: state.idx, score: state.score, name: state.name, mode: state.mode,
+      bank: state.bank.map(({id,file,user,correct,qKey,qStemHtml})=>({id,file,user,correct,qKey,qStemHtml}))
+    }));
+  }
+  const loadProgress = ()=>{ try{ return JSON.parse(localStorage.getItem('quiz_progress')||'null'); }catch{return null;} };
+  const saveBank = (payload)=> localStorage.setItem('quiz_bank', JSON.stringify(payload));
+  const loadBank = ()=>{ try{ return JSON.parse(localStorage.getItem('quiz_bank')||'null'); }catch{return null;} };
+
+  // Rendering
+  function render(){
+    if (state.idx<0) state.idx=0;
+    if (state.idx>=state.bank.length){ finish(); return; }
+    const item=state.bank[state.idx];
+    $('quizName').textContent=state.name;
+    $('idx').textContent=String(state.idx+1);
+    $('total').textContent=String(state.bank.length);
+    $('bar').style.width=((state.idx)/Math.max(1,state.bank.length)*100)+'%';
+    $('score').textContent='Счёт: '+state.score;
+    $('qbox').innerHTML=item.qStemHtml || stripOptions(item.qHtml);
+    $('qboxTranslated').classList.add('hidden'); $('qboxTranslated').textContent='';
+    $('answerTranslated').classList.add('hidden'); $('answerTranslated').textContent='';
+    $('translatorStatus').textContent=''; $('hideTranslationBtn').classList.add('hidden');
+
+    const form=$('form'); form.innerHTML='';
+    const letters=(item.options.length?item.options.map(o=>o.letter):['A','B','C','D']);
+    letters.forEach(L=>{
+      const label=document.createElement('label');
+      label.className='opt'+(item.user?(item.user===L?(item.user===item.correct?' correct':' wrong'):''):'');
+      const input=document.createElement('input'); input.type='radio'; input.name='ans'; input.value=L; input.checked=item.user===L;
+      if(item.user){ input.disabled=true; }
+      const span=document.createElement('div'); const text=item.options.find(o=>o.letter===L)?.text||('Вариант '+L);
+      span.innerHTML='<strong>'+L+'.</strong> '+text;
+      label.appendChild(input); label.appendChild(span); form.appendChild(label);
+    });
+
+    const explan=$('explan'); const answerHtml=$('answerHtml');
+    answerHtml.innerHTML=item.aHtml;
+    const hide = !item.user; // до ответа скрыть
+    explan.classList.toggle('hidden', hide); explan.open=!hide;
+
+    $('prevBtn').disabled = state.idx===0;
+    $('nextBtn').disabled = state.idx===state.bank.length-1;
+    $('checkBtn').disabled = !!item.user;
+  }
+  function finish(){
+    $('quizCard').classList.add('hidden');
+    // Вместо экрана финиша сразу возвращаемся к началу (цикл)
+    state.idx = 0; state.score = 0; state.bank.forEach(it=>it.user=null);
+    saveProgress();
+    render();
+  }
+
+  // Controls
+  $('prevBtn').addEventListener('click', ()=>{ state.idx--; render(); saveProgress(); });
+  $('nextBtn').addEventListener('click', ()=>{ state.idx++; render(); saveProgress(); });
+  $('checkBtn').addEventListener('click', ()=>{
+    const sel = document.querySelector('input[name=ans]:checked');
+    if(!sel){ alert('Выберите вариант ответа'); return; }
+    const L = sel.value; const item=state.bank[state.idx];
+    if(!item.user){ item.user=L; if(item.correct && L===item.correct) state.score++; }
+    render(); saveProgress();
+  });
+
+  // Translation (on-demand)
+  async function translate(text, target, endpoints){
+    for (const apiUrl of endpoints){
+      try{
+        const res = await fetch(apiUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({q:text, source:'auto', target:target, format:'text'})});
+        const data = await res.json(); const out = data.translatedText || data.translation || data.result || '';
+        if (out && norm(out)!==norm(text)) return out;
+      }catch{}
+    }
+    return '';
+  }
+  $('translateBtn').addEventListener('click', async ()=>{
+    if(!state.bank.length) return;
+    const item=state.bank[state.idx];
+    const endpoints=['https://libretranslate.com/translate','https://libretranslate.de/translate','https://translate.mentality.rip/translate'];
+    $('translatorStatus').textContent='Перевод…';
+    const [qt, at] = await Promise.all([translate(htmlToPlain(item.qHtml), 'ru', endpoints), translate(htmlToPlain(item.aHtml), 'ru', endpoints)]);
+    $('translatorStatus').textContent='';
+    let shown=false;
+    if(qt && norm(qt)!==norm(htmlToPlain(item.qHtml))){ $('qboxTranslated').textContent=qt; $('qboxTranslated').classList.remove('hidden'); shown=true; }
+    if(at && norm(at)!==norm(htmlToPlain(item.aHtml))){ $('answerTranslated').textContent=at; $('answerTranslated').classList.remove('hidden'); shown=true; }
+    $('hideTranslationBtn').classList.toggle('hidden', !shown);
+    if(!shown) alert('Перевод недоступен или не отличается от исходника.');
+  });
+  $('hideTranslationBtn').addEventListener('click', ()=>{
+    $('qboxTranslated').classList.add('hidden'); $('qboxTranslated').textContent='';
+    $('answerTranslated').classList.add('hidden'); $('answerTranslated').textContent='';
+    $('hideTranslationBtn').classList.add('hidden');
+  });
+
+  // Data manager UI (optional)
+  $('exportBankBtn')?.addEventListener('click', ()=>{
+    const payload={name: state.name, items: state.bank.map(({qHtml,aHtml,options,correct,qKey,qStemHtml})=>({qHtml,aHtml,options,correct,qKey,qStemHtml}))};
+    const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='quiz_bank.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('exportProgressBtn')?.addEventListener('click', ()=>{
+    const blob = new Blob([localStorage.getItem('quiz_progress')||'{}'], {type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='quiz_progress.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('resetAllBtn')?.addEventListener('click', ()=>{
+    if (!confirm('Сбросить банк и прогресс?')) return;
+    localStorage.removeItem('quiz_bank'); localStorage.removeItem('quiz_progress');
+    location.reload();
+  });
+  $('importInput')?.addEventListener('change', async (ev)=>{
+    const files=[...ev.target.files||[]];
+    if(!files.length) return;
+    let items=[]; let name='Импортированный банк';
+    for (const f of files){
+      const text=await f.text();
+      if (f.type==='application/json' || f.name.endsWith('.json')){
+        try{
+          const payload=JSON.parse(text);
+          if (payload && Array.isArray(payload.items)){
+            payload.items.forEach(it=> items.push({
+              qHtml: it.qHtml, aHtml: it.aHtml, options: it.options||[],
+              correct: it.correct||null, qKey: it.qKey || norm(htmlToPlain(it.qHtml)),
+              qStemHtml: it.qStemHtml || stripOptions(it.qHtml)
+            }));
+            name = payload.name || name;
+            continue;
+          }
+        }catch{ /* fallthrough to CSV */ }
+      }
+      // CSV 2 columns
+      const rows=[]; let cur="", inQ=false, row=[];
+      function endField(){ row.push(cur); cur=""; }
+      function endRow(){ endField(); rows.push(row); row=[]; }
+      for (let i=0;i<text.length;i++){ const c=text[i], n=text[i+1];
+        if (inQ){ if (c=='"'&&n=='"'){cur+='"'; i++;} else if(c=='"'){inQ=false;} else cur+=c; }
+        else { if(c=='"'){inQ=true;} else if(c==','){ endField(); } else if(c=='\n'){ endRow(); } else if(c=='\r'){ } else cur+=c; }
+      }
+      if(cur.length||row.length) endRow();
+      rows.forEach(r=>{
+        const qHtml=r[0]||'', aHtml=r[1]||'';
+        items.push({
+          qHtml, aHtml, options: extractOptions(qHtml), correct: extractCorrect(aHtml),
+          qKey: norm(htmlToPlain(qHtml)), qStemHtml: stripOptions(qHtml)
+        });
+      });
+    }
+    // dedupe
+    const seen=new Set();
+    items = items.filter(it=>{ if(!it.qKey) return true; if(seen.has(it.qKey)) return false; seen.add(it.qKey); return true; });
+    const payload={name, items};
+    saveBank(payload);
+    // rebuild state from new bank, reset progress idx but keep ability to resume later
+    state.bank = payload.items.map((it,ix)=>({ id:'bank:'+ix, file:name, user:null, ...it }));
+    state.name = name; state.idx=0; state.score=0;
+    localStorage.removeItem('quiz_progress');
+    $('status').textContent = `Импортировано вопросов: ${state.bank.length}`;
+    // Go straight to quiz
+    $('mgrCard').classList.add('hidden');
+    $('quizCard').classList.remove('hidden');
+    render(); saveProgress();
+  });
+
+  // Boot: auto-load bank and resume progress
+  (async function boot(){
+    $('status').textContent='Загрузка банка…';
+    let bank = loadBank();
+    if (!bank) {
+      // Try to fetch quiz_bank.json from root (optional)
+      try {
+        const res = await fetch('./quiz_bank.json', {cache:'no-store'});
+        if (res.ok) {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) { bank = await res.json(); } else { bank = null; }
+          if (bank && Array.isArray(bank.items)) {
+            saveBank(bank);
+          }
+        }
+      } catch {}
+    }
+    if (bank && Array.isArray(bank.items) && bank.items.length) {
+      state.bank = bank.items.map((it,ix)=>({ id:'bank:'+ix, file: bank.name||'bank', user:null, ...it }));
+      state.name = bank.name || 'Банк вопросов';
+      // Try progress
+      const saved = loadProgress();
+      if (saved && Array.isArray(saved.bank)) {
+        // map users back by qKey or order
+        const map = new Map(saved.bank.map((x,i)=>[x.qKey||('idx:'+i), x.user]));
+        let restored = 0;
+        state.bank.forEach((it,i)=>{
+          const k = it.qKey || ('idx:'+i);
+          if (map.has(k)) { it.user = map.get(k); if (it.user && it.correct && it.user===it.correct) state.score++; restored++; }
+        });
+        state.idx = Math.min(saved.idx||0, state.bank.length-1);
+        $('status').textContent = `Автопродолжение • восстановлено: ${restored}`;
+      } else {
+        state.idx = 0; state.score = 0;
+        $('status').textContent = `Готово • вопросов: ${state.bank.length}`;
+      }
+      $('mgrCard').classList.add('hidden');
+      $('quizCard').classList.remove('hidden');
+      render();
+    } else {
+      $('status').textContent='Нет банка вопросов. Импортируйте (один раз).';
+      $('mgrCard').classList.remove('hidden');
+    }
+  })();
+  
+<script>
+  // Toggle Manager (gear button). Manager shows import/export/reset controls.
+  (function(){
+    const gear = document.getElementById('gearBtn');
+    const mgr = document.getElementById('mgrCard');
+    if (gear && mgr) {
+      gear.addEventListener('click', ()=>{
+        mgr.classList.toggle('hidden');
+        // Scroll if we revealed it
+        if (!mgr.classList.contains('hidden')) mgr.scrollIntoView({behavior:'smooth'});
+      });
+    }
+    // Auto-show manager if URL has ?manage=1 or #manage
+    const params = new URLSearchParams(location.search);
+    if ((params.get('manage') === '1') || location.hash === '#manage') {
+      if (mgr) mgr.classList.remove('hidden');
+    }
+  })();
+</script>
+</script>
+
+<script>
+/*! LZ-String (MIT) https://pieroxy.net/blog/pages/lz-string/index.html */
+var LZString=function(){function o(o,r){if(!t[o]){t[o]={};for(var n=0;n<o.length;n++)t[o][o.charAt(n)]=n}return t[o][r]}var r=String.fromCharCode,n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={},t={},i={compressToEncodedURIComponent:function(o){return null==o?"":i._compress(o,6,function(o){return n.charAt(o)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(e){return o(n,r.charAt(e))})},_compress:function(o,n,e){if(null==o)return"";var t,i,a,s={},p={},u="",c="",l="",h=2,f=3,d=2,m=[],v=0;for(a=0;a<o.length;a+=1)if(u=o.charAt(a),Object.prototype.hasOwnProperty.call(s,u)||(s[u]=f++,p[u]=!0),c=l+u,Object.prototype.hasOwnProperty.call(s,c))l=c;else{if(Object.prototype.hasOwnProperty.call(p,l)){if(l.charCodeAt(0)<256){for(t=0;t<d;t++)v<<=1,0==v&&(v=1,m.push(0));for(i=l.charCodeAt(0),t=0;t<8;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}else{for(i=1,t=0;t<d;t++)v=v<<1|i,0==v&&(v=1,m.push(v>>1&1)),i=0;for(i=l.charCodeAt(0),t=0;t<16;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}h--,0==h&&(h=Math.pow(2,d),d++),delete p[l]}else for(i=s[l],t=0;t<d;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1;h--,0==h&&(h=Math.pow(2,d),d++),s[c]=f++,l=String(u)}if(""!==l){if(Object.prototype.hasOwnProperty.call(p,l)){if(l.charCodeAt(0)<256){for(t=0;t<d;t++)v<<=1,0==v&&(v=1,m.push(0));for(i=l.charCodeAt(0),t=0;t<8;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}else{for(i=1,t=0;t<d;t++)v=v<<1|i,0==v&&(v=1,m.push(v>>1&1)),i=0;for(i=l.charCodeAt(0),t=0;t<16;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1}h--,0==h&&(h=Math.pow(2,d),d++),delete p[l]}else for(i=s[l],t=0;t<d;t++)v=v<<1|1&i,0==v&&(v=1,m.push(v>>1&1)),i>>=1;h--,0==h&&(h=Math.pow(2,d),d++),s[c]=f++}for(i=2,t=0;t<d;t++)v=v<<1|i,0==v&&(v=1,m.push(v>>1&1)),i=0;for(;v;)m.push(v&1),v>>=1;for(var g="",w=0;w<m.length;w++)g+=n.charAt(m[w]);return g},_decompress:function(o,r,n){var e,t,i,a,s,p,u,c,l,h=[],f=4,d=4,m=3,v="",g=[],w={val:n(0),position:r,index:1};for(t=0;t<3;t+=1)h[t]=t;for(i=0,a=Math.pow(2,2),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;switch(e=i){case 0:for(i=0,a=Math.pow(2,8),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;c=r(i);break;case 1:for(i=0,a=Math.pow(2,16),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;c=r(i);break;case 2:return""}for(h[3]=c,p=c,l=v=g.push(c);;){if(w.index>o)return"";for(i=0,a=Math.pow(2,m),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;switch(c=i){case 0:for(i=0,a=Math.pow(2,8),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;h[d++]=r(i),c=d-1,m--;break;case 1:for(i=0,a=Math.pow(2,16),s=1;s!=a;)u=w.val&w.position,w.position>>=1,0==w.position&&(w.position=r,w.val=n(w.index++)),i|=(u>0?1:0)*s,s<<=1;h[d++]=r(i),c=d-1,m--;break;case 2:return g.join("")}if(0==m&&(m=Math.pow(2,++v)),h[c])t=h[c];else{if(c!==d)return null;t=p+p.charAt(0)}g.push(t),h[d++]=p+t.charAt(0),p=t,0==--m&&(m=Math.pow(2,++v))}}}();</script>
+<script>
+(function(){
+  function hashKey(s){ // fast non-crypto short hash to base36
+    let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h) ^ s.charCodeAt(i); } 
+    h = h >>> 0; return h.toString(36);
+  }
+  const shareBtn = document.getElementById('shareBtn');
+  if (!shareBtn) return;
+  shareBtn.addEventListener('click', async () => {
+    try {
+      const progressRaw = localStorage.getItem('quiz_progress') || '{}';
+      const prog = JSON.parse(progressRaw);
+      // Build compact progress: only idx + answered map
+      const items = Array.isArray(prog.bank) ? prog.bank : [];
+      const map = [];
+      for (let i=0;i<items.length;i++) {
+        const it = items[i];
+        if (it && it.user) { map.push([hashKey(it.qKey || ('idx:'+i)), it.user]); }
+      }
+      const compact = { idx: prog.idx||0, map };
+      const payload = { progress: compact };
+      const json = JSON.stringify(payload);
+      const packed = LZString.compressToEncodedURIComponent(json);
+      const base = location.origin + location.pathname.replace(/index\.html?$/i,'') + 'import.html';
+      const url = base + '#v=2&d=' + packed;
+
+      // Length guard: if too long for share, just copy to clipboard + alert
+      if (url.length > 1800) {
+        await navigator.clipboard?.writeText(url);
+        alert('Ссылка длинная, но я скопировал её в буфер. Отправь себе и открой на iPhone.');
+        return;
+      }
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Импорт прогресса', text: 'Открой на телефоне для продолжения', url }); }
+        catch (e) { await navigator.clipboard?.writeText(url); alert('Скопировал ссылку в буфер.'); }
+      } else {
+        await navigator.clipboard?.writeText(url);
+        alert('Скопировал ссылку в буфер. Отправь себе и открой на iPhone.');
+      }
+    } catch(e) {
+      console.error(e); alert('Не удалось сформировать ссылку.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
